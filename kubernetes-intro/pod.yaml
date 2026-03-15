@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: homework
+spec:
+  containers:
+  - name: web
+    image: python:3
+    command: ["python3", "-m", "http.server", "8000"]
+    workingDir: /homework
+    ports:
+    - containerPort: 8000
+    volumeMounts:
+    - name: html-data
+      mountPath: /homework
+    lifecycle:
+      preStop:
+        exec:
+          command: ["rm", "-f", "/init/index.html"]
+            
+  initContainers:
+  - name: init-web
+    image: busybox:1.29
+    command: ["wget", "-O", "/init/index.html", "-c", "http://info.cern.ch"]
+    volumeMounts:
+    - name: html-data 
+      mountPath: /init
+ 
+  volumes:
+  - name: html-data
+    emptyDir: {}
+  
