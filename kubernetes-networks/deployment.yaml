@@ -34,7 +34,7 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["rm", "-f", "/init/index.html"]
+              command: ["rm", "-f", "/homework/index.html"]
         readinessProbe:
           httpGet:
             path: /index.html
