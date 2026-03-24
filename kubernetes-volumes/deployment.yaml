@@ -31,6 +31,8 @@ spec:
         volumeMounts:
         - name: example-pv
           mountPath: /homework
+        - name: example-config-volume
+          mountPath: /homework/conf
         lifecycle:
           preStop:
             exec:
@@ -54,3 +56,6 @@ spec:
         - name: example-pv
           persistentVolumeClaim:
             claimName: example-pv-claim
+        - name: example-config-volume
+          configMap:
+            name: example-config-map
