@@ -19,8 +19,8 @@ spec:
       labels:
         app: nginx
     spec:
-      nodeSelector:
-        homework: "true"
+      # nodeSelector:
+      #   homework: "true"
       containers:
       - name: web
         image: python:3
@@ -47,7 +47,7 @@ spec:
       initContainers:
       - name: init-web
         image: busybox:1.29
-        command: ["wget", "-O", "/init/index.html", "-c", "http://info.cern.ch"]
+        command: ["wget", "-O", "/init/index.html", "http://info.cern.ch"]
         volumeMounts:
         - name: example-pv
           mountPath: /init

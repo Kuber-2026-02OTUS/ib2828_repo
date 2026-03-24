@@ -2,9 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: example-config-map
+  namespace: homework
 data:
-  # property-like keys; each key maps to a simple value
-  timeout: "300"
-  level: "debug"
-  db_host: "localhost"
+  file: |
+    # property-like keys; each key maps to a simple value
+    timeout: "300"
+    level: "debug"
+    db_host: "localhost"
 
