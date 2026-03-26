@@ -19,8 +19,8 @@ spec:
       labels:
         app: nginx
     spec:
-      nodeSelector:
-        homework: "true"
+      # nodeSelector:
+      #   homework: "true"
       containers:
       - name: web
         image: python:3
@@ -29,8 +29,10 @@ spec:
         ports:
         - containerPort: 8000
         volumeMounts:
-        - name: html-data
+        - name: example-pv
           mountPath: /homework
+        - name: example-config-volume
+          mountPath: /homework/conf
         lifecycle:
           preStop:
             exec:
@@ -45,11 +47,15 @@ spec:
       initContainers:
       - name: init-web
         image: busybox:1.29
-        command: ["wget", "-O", "/init/index.html", "-c", "http://info.cern.ch"]
+        command: ["wget", "-O", "/init/index.html", "http://info.cern.ch"]
         volumeMounts:
-        - name: html-data 
+        - name: example-pv
           mountPath: /init
     
       volumes:
-      - name: html-data
-        emptyDir: {}
+        - name: example-pv
+          persistentVolumeClaim:
+            claimName: example-pv-claim
+        - name: example-config-volume
+          configMap:
+            name: example-config-map

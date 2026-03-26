@@ -4,12 +4,20 @@ metadata:
   name: virtual-host-ingress
   namespace: homework
 spec:
+  ingressClassName: nginx
   rules:
     - host: homework.otus
       http:
         paths:
         - pathType: Prefix
           path: "/"
+          backend:
+            service:
+              name: nginx-service
+              port:
+                number: 80
+        - pathType: Prefix
+          path: /conf       
           backend:
             service:
               name: nginx-service

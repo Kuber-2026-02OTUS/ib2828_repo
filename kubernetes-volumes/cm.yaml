@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-config-map
+  namespace: homework
+data:
+  file: |
+    timeout: "300"
+    level: "debug"
+    db_host: "localhost"
+
