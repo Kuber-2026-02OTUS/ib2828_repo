@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: homework
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      # nodeSelector:
+      #   homework: "true"
+      containers:
+      - name: web
+        image: python:3
+        command: ["python3", "-m", "http.server", "8000"]
+        workingDir: /homework
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: example-pv
+          mountPath: /homework
+        - name: example-config-volume
+          mountPath: /homework/conf
+        lifecycle:
+          preStop:
+            exec:
+              command: ["rm", "-f", "/homework/index.html"]
+        readinessProbe:
+          httpGet:
+            path: /index.html
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 3              
+                
+      initContainers:
+      - name: init-web
+        image: busybox:1.29
+        command: ["wget", "-O", "/init/index.html", "http://info.cern.ch"]
+        volumeMounts:
+        - name: example-pv
+          mountPath: /init
+    
+      volumes:
+        - name: example-pv
+          persistentVolumeClaim:
+            claimName: example-pv-claim
+        - name: example-config-volume
+          configMap:
+            name: example-config-map
