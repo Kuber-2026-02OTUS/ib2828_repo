@@ -21,6 +21,7 @@ spec:
     spec:
       # nodeSelector:
       #   homework: "true"
+      serviceAccountName: monitoring
       containers:
       - name: web
         image: python:3
