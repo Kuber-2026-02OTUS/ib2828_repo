@@ -1,0 +1,35 @@
+---
+- name: Prepare all nodes
+  hosts: k8s
+  become: true
+  roles:
+    - common_k8s
+  tags: common
+
+- name: Initialize master node
+  hosts: master
+  become: true
+  roles:
+    - k8s_master
+  tags: master
+
+- name: Join worker nodes
+  hosts: work
+  become: true
+  roles:
+    - k8s_worker
+  tags: worker
+
+- name: Verify cluster status
+  hosts: master
+  become: true
+  tasks:
+    - name: Get nodes status
+      ansible.builtin.command:
+        cmd: kubectl get nodes
+      register: common_nodes
+      changed_when: false
+
+    - name: Show nodes
+      ansible.builtin.debug:
+        msg: "{{ common_nodes.stdout_lines }}"
