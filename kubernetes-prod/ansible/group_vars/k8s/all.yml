@@ -1,0 +1,15 @@
+---
+ansible_ssh_private_key_file: ~/.ssh/id_ed25519_dc_nikolay
+
+kubernetes_version: 1.35
+containerd_version: 1.7.29
+cni_plugin_version: 1.4.0
+
+pod_network_cidr: 10.244.0.0/16
+service_cidr: 10.96.0.0/12
+
+flannel_interface: ens18
+
+domain_name: home.lan
+
+kubeadm_join_command_path: "/tmp/kubeadm_join_command"

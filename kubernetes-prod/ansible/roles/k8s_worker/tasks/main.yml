@@ -1,0 +1,63 @@
+---
+- name: Wait for master to be ready
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[groups['master'][0]]['ansible_default_ipv4']['address'] }}"
+    port: 6443
+    timeout: 120
+    delay: 5
+
+- name: Get join command from master
+  ansible.builtin.slurp:
+    src: /tmp/kubeadm_join_command
+  register: k8s_worker_join_command
+  delegate_to: "{{ groups['master'][0] }}"
+  run_once: true
+
+- name: Decode join command
+  ansible.builtin.set_fact:
+    k8s_worker_join_command_decoded: "{{ k8s_worker_join_command.content | b64decode }}"
+
+- name: Execute kubeadm join      # noqa var-naming[no-role-prefix]
+  ansible.builtin.shell:          # noqa command-instead-of-shell
+    cmd: "{{ k8s_worker_join_command_decoded }}"
+  register: common_join_result
+  changed_when: false
+  ignore_errors: true
+
+- name: Check if node already joined
+  ansible.builtin.debug:
+    msg: "Node already joined or join completed"
+  when: common_join_result.rc == 0
+
+- name: Display join error if any
+  ansible.builtin.debug:
+    msg: "Join failed with error: {{ common_join_result.stderr }}"
+  when: common_join_result.rc != 0
+
+- name: Verify node joined successfully     # noqa var-naming[no-role-prefix]
+  ansible.builtin.shell:                    # noqa command-instead-of-shell
+    cmd: kubectl get nodes {{ inventory_hostname }}
+  delegate_to: "{{ groups['master'][0] }}"
+  register: common_node_verify
+  changed_when: false
+  until: common_node_verify.rc == 0
+  retries: 10
+  delay: 5
+
+- name: Add label to node (infrastructure)
+  ansible.builtin.command:
+    cmd: kubectl label nodes {{ inventory_hostname }} node-type=infrastructure --overwrite
+  delegate_to: "{{ groups['master'][0] }}"
+  changed_when: false
+  when: "'infra' in inventory_hostname"
+
+- name: Add label to node (worker)
+  ansible.builtin.command:
+    cmd: kubectl label nodes {{ inventory_hostname }} node-type=worker --overwrite
+  delegate_to: "{{ groups['master'][0] }}"
+  changed_when: false
+  when: "'work' in inventory_hostname"
+
+- name: Display node status
+  ansible.builtin.debug:
+    msg: "Node {{ inventory_hostname }} joined successfully"

@@ -1,0 +1,191 @@
+---
+- name: Add entries to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "192.168.245.241 master01.lan"
+    - "192.168.245.245 work01.lan"
+    - "192.168.245.246 work02.lan"
+    - "192.168.245.247 work03.lan"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install required dependencies
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - python3-pip
+      - net-tools
+      - vim
+      - wget
+      - nfs-common
+    state: present
+
+- name: Disable swap (required by kubelet)
+  ansible.builtin.command: swapoff -a
+  changed_when: false
+
+- name: Remove swap from fstab
+  ansible.posix.mount:
+    name: swap
+    fstype: swap
+    state: absent
+
+- name: Load kernel modules for containerd
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/containerd.conf
+    content: |
+      overlay
+      br_netfilter
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Load kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Configure sysctl for Kubernetes
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+    - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+    - { name: 'net.ipv4.ip_forward', value: '1' }
+    - { name: 'vm.swappiness', value: '0' }
+
+- name: Install containerd
+  block:
+
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install containerd package
+      ansible.builtin.apt:
+        name: "containerd.io={{ containerd_version }}*"
+        state: present
+        update_cache: true
+
+- name: Create containerd directory
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Generate containerd default configuration
+  ansible.builtin.command: containerd config default
+  register: common_k8s_containerd_config
+  changed_when: false
+
+- name: Save containerd configuration
+  ansible.builtin.copy:
+    content: "{{ common_k8s_containerd_config.stdout }}"
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart containerd
+
+- name: Enable systemd cgroup for containerd
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '^            SystemdCgroup = false'
+    line: '            SystemdCgroup = true'
+    backrefs: true
+
+- name: Install kubeadm, kubelet, kubectl from repository
+  block:
+    - name: Copy v_1.35
+      ansible.builtin.copy:
+        src: v_1.35/
+        dest: /tmp/v_1.35
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copy v_1.36
+      ansible.builtin.copy:
+        src: v_1.36/
+        dest: /tmp/v_1.36
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Install Kubernetes packages
+      ansible.builtin.apt:
+        deb: "/tmp/v_1.35/{{ item }}"
+        state: present
+      loop:
+        - kubernetes-cni_1.8.0-1.1_amd64.deb
+        - kubectl_1.35.0-1.1_amd64.deb
+        - kubelet_1.35.0-1.1_amd64.deb
+        - cri-tools_1.35.0-1.1_amd64.deb
+        - kubeadm_1.35.0-1.1_amd64.deb
+
+    # - name: Hold Kubernetes packages from updating
+    #   ansible.builtin.dpkg_selections:
+    #     name: "{{ item }}"
+    #     selection: hold
+    #   loop:
+    #     - kubelet
+    #     - kubeadm
+    #     - kubectl
+
+##########################################################################################
+
+- name: Enable and restart kubelet
+  ansible.builtin.service:
+    name: kubelet
+    enabled: true
+    state: restarted
+
+- name: Install bash-completion
+  ansible.builtin.apt:
+    name: bash-completion
+    state: present
+
+- name: Configure bash-completion for kubectl
+  ansible.builtin.lineinfile:
+    path: /home/{{ ansible_user }}/.bashrc
+    line: 'source <(kubectl completion bash)'
+    create: true
+    mode: '0644'
+
+- name: Create .kube directory
+  ansible.builtin.file:
+    path: /home/{{ ansible_user }}/.kube
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
