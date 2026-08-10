@@ -1,0 +1,30 @@
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/kafka
+  tag: 4.0.0-debian-12-r10
+
+controller:
+  replicaCount: 1
+
+broker:
+  replicaCount: 1
+
+listeners:
+  client:
+    protocol: PLAINTEXT
+  interbroker:
+    protocol: PLAINTEXT
+  controller:
+    protocol: PLAINTEXT
+
+sasl:
+  enabledMechanisms: PLAIN,SCRAM-SHA-256,SCRAM-SHA-512
+  interBrokerMechanism: PLAIN
+  controllerMechanism: PLAIN
+
+volumePermissions:
+  enabled: false

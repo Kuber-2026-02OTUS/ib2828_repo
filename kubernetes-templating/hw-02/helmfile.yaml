@@ -1,0 +1,60 @@
+---
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  # PRODUCTION - 5 брокеров, SASL_PLAINTEXT
+  - name: kafka-prod
+    namespace: prod
+    chart: bitnami/kafka
+    version: 28.10.2  # Стабильная версия для Kafka 3.5.2
+    values:
+      - kraft:
+          enabled: false
+        zookeeper:
+          enabled: true
+          replicaCount: 3
+        controller:
+          replicaCount: 0
+        broker:
+          replicaCount: 5
+        auth:
+          enabled: true
+          clientProtocol: SASL_PLAINTEXT
+          interBrokerProtocol: SASL_PLAINTEXT
+          sasl:
+            mechanisms: "PLAIN"
+            users:
+              - user: "admin"
+                password: "admin123"
+        persistence:
+          enabled: false
+        image:
+          repository: bitnamilegacy/kafka
+          tag: 3.5.2-debian-12-r30
+
+  # DEVELOPMENT - 1 брокер, PLAINTEXT (без авторизации)
+  - name: kafka-dev
+    namespace: dev
+    chart: bitnami/kafka
+    version: 30.1.2  # Последняя версия для тестов
+    values:
+      - kraft:
+          enabled: false
+        zookeeper:
+          enabled: true
+          replicaCount: 1
+        controller:
+          replicaCount: 0
+        broker:
+          replicaCount: 1
+        auth:
+          enabled: false
+          clientProtocol: PLAINTEXT
+          interBrokerProtocol: PLAINTEXT
+        persistence:
+          enabled: false
+        image:
+          repository: bitnamilegacy/kafka
+          tag: latest
