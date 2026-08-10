@@ -1,0 +1,36 @@
+releases:
+  - name: kafka-prod
+    namespace: prod
+    chart: oci://registry-1.docker.io/bitnamicharts/kafka 
+    version: 32.4.3
+    createNamespace: true
+    values:
+      - global:
+          security:
+            allowInsecureImages: true
+        replicaCount: 5
+        image: 
+          repository: bitnamilegacy/kafka
+          tag: 3.5.2-debian-11-r0
+        auth:
+          protocol: PLAINTEXT
+        prepareConfig:
+          resourcesPreset: none
+
+  - name: kafka-dev
+    namespace: dev
+    chart: oci://registry-1.docker.io/bitnamicharts/kafka 
+    version: 32.4.3
+    createNamespace: true
+    values:
+      - global:
+          security:
+            allowInsecureImages: true
+        replicaCount: 1
+        image:
+          repository: bitnamilegacy/kafka
+          tag: 3.5.2-debian-11-r0
+        auth:
+          protocol: PLAINTEXT
+        prepareConfig:
+          resourcesPreset: none

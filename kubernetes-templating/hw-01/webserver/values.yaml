@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: python
+  pullPolicy: IfNotPresent
+  tag: 3.10.20-alpine3.22
+
+initContainer:
+  repository: busybox
+  tag: 1.36.1-musl
+
+serviceAccount:
+  create: true
+  name: "monitoring"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  host: homework.otus
+
+probe:
+  enabled: True
+
