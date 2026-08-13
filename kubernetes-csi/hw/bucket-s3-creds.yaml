@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bucket-s3-creds
+  namespace: kube-system
+  labels:
+    app: rustfs
+    component: s3-credentials
+type: Opaque
+stringData:
+  accessKeyID: access-key
+  secretAccessKey: secret-key
+  endpoint: http://192.168.254.175:9000
+  region: us-east-1
