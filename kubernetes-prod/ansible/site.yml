@@ -1,0 +1,21 @@
+---
+- name: Prepare all nodes
+  hosts: k8s
+  become: true
+  roles:
+    - common_k8s
+  tags: common
+
+- name: Initialize master node
+  hosts: master
+  become: true
+  roles:
+    - k8s_master
+  tags: master
+
+- name: Join worker nodes
+  hosts: work
+  become: true
+  roles:
+    - k8s_worker
+  tags: worker

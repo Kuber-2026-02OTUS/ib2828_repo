@@ -1,0 +1,28 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: rustfs-sc
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: ru.yandex.s3.csi  # Оставьте как есть, если CSI-драйвер используется
+parameters:
+  mounter: geesefs
+  options: "--memory-limit 1000 --dir-mode 0777 --file-mode 0666"
+  bucket: "bucket-otus"  # Укажите имя вашего бакета в RustFS
+  s3Url: "http://192.168.254.175:9000"
+  region: "us-east-1"  # Можно указать любой регион, RustFS игнорирует
+
+  # Параметры аутентификации (должны быть в секрете)
+  # Убедитесь, что используемые секреты (bucket-s3-creds) содержат правильные access-key-id и secret-key
+  csi.storage.k8s.io/provisioner-secret-name: "bucket-s3-creds"
+  csi.storage.k8s.io/provisioner-secret-namespace: "kube-system"
+  csi.storage.k8s.io/node-publish-secret-name: "bucket-s3-creds"
+  csi.storage.k8s.io/node-publish-secret-namespace: "kube-system"
+  csi.storage.k8s.io/controller-publish-secret-name: "bucket-s3-creds"
+  csi.storage.k8s.io/controller-publish-secret-namespace: "kube-system"
+  csi.storage.k8s.io/node-stage-secret-name: "bucket-s3-creds"
+  csi.storage.k8s.io/node-stage-secret-namespace: "kube-system"
+
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true

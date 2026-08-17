@@ -1,0 +1,11 @@
+skip_list:
+  - command-shell
+  - core
+  - deprecations
+  - experimental
+  - formatting
+  - idempotency
+  - metadata
+  - yaml
+  - name
+  - fqcn
