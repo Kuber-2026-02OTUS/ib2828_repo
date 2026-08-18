@@ -1,0 +1,47 @@
+server:
+  replicas: 3
+
+  ha:
+    enabled: true
+
+    raft:
+      enabled: true
+      setNodeId: true
+
+      config: |
+        ui = true
+
+        cluster_name = "vault-ha"
+
+        storage "raft" {
+          path = "/vault/data"
+        }
+
+        listener "tcp" {
+          address         = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_disable     = true
+        }
+
+        service_registration "kubernetes" {}
+
+  dataStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: vault-local
+
+  disruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+
+  topologySpreadConstraints: |
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: vault
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
